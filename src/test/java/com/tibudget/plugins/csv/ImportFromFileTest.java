@@ -17,14 +17,15 @@ import org.slf4j.LoggerFactory;
 import com.tibudget.api.exceptions.CollectError;
 import com.tibudget.api.exceptions.ParameterError;
 import com.tibudget.dto.BankOperationDto;
-import com.tibudget.plugins.csv.CsvCollector;
 
 public class ImportFromFileTest {
 
 	private static Logger LOG = LoggerFactory.getLogger(ImportFromFileTest.class);
 	
-	private final static int TIMEOUT = 1000;
+	private final static int TIMEOUT = 3000;
 	
+	private final static int TIMEOUT_LONG = 10000;
+
 	static class BankOperationComparator implements Comparator<BankOperationDto> {
 		@Override
 		public int compare(BankOperationDto o1, BankOperationDto o2) {
@@ -99,7 +100,7 @@ public class ImportFromFileTest {
 		checkResult((List<BankOperationDto>) autoCollector.getBankOperations(), true);
 	}
 
-	@Test(timeout=TIMEOUT)
+	@Test(timeout=TIMEOUT_LONG)
 	public void testImportPerf() throws CollectError, ParameterError {
 		File csv = new File("target/test-classes/import-nrow.csv");
 		long start = System.currentTimeMillis();
