@@ -17,13 +17,12 @@ import org.slf4j.LoggerFactory;
 import com.tibudget.api.exceptions.CollectError;
 import com.tibudget.api.exceptions.ParameterError;
 import com.tibudget.dto.BankOperationDto;
-import com.tibudget.plugins.csv.CsvCollector;
 
 public class ImportFromFileTest {
 
 	private static Logger LOG = LoggerFactory.getLogger(ImportFromFileTest.class);
 	
-	private final static int TIMEOUT = 1000;
+	private final static int TIMEOUT = 3000;
 	
 	static class BankOperationComparator implements Comparator<BankOperationDto> {
 		@Override
