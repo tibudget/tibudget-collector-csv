@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.tibudget</groupId>
 	<artifactId>tibudget-collector-csv</artifactId>
-	<version>0.0.7-SNAPSHOT</version>
+	<version>0.0.7</version>
 	<packaging>jar</packaging>
 
 	<name>Ti'Budget CSV file collector</name>
@@ -16,7 +16,8 @@
 		<connection>scm:git:ssh://git@git.cloudbees.com/tibudget/tibudget-collector-csv.git</connection>
 		<url>https://git.cloudbees.com/tibudget/tibudget-collector-csv.git</url>
 		<developerConnection>scm:git:ssh://git@git.cloudbees.com/tibudget/tibudget-collector-csv.git</developerConnection>
-	</scm>
+	  <tag>tibudget-collector-csv-0.0.7</tag>
+  </scm>
 
 	<distributionManagement>
 		<repository>
