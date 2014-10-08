@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +33,8 @@ import com.tibudget.api.exceptions.CollectError;
 import com.tibudget.api.exceptions.ParameterError;
 import com.tibudget.dto.BankAccountDto;
 import com.tibudget.dto.BankOperationDto;
-import com.tibudget.dto.MessageDto;
 import com.tibudget.dto.BankOperationDto.Type;
+import com.tibudget.dto.MessageDto;
 
 public class CsvCollector implements ICollectorPlugin {
 
@@ -426,7 +427,7 @@ public class CsvCollector implements ICollectorPlugin {
 	public Collection<MessageDto> validate() {
 		List<MessageDto> msg = new ArrayList<MessageDto>();
 		if (this.bankAccount == null) {
-			this.bankAccount = new BankAccountDto(com.tibudget.dto.BankAccountDto.Type.OTHER, "CSV account", "Import CSV", 0.0);
+			this.bankAccount = new BankAccountDto(UUID.randomUUID().toString(), com.tibudget.dto.BankAccountDto.Type.OTHER, "CSV account", "Import CSV", 0.0);
 		}
 		if (this.file == null) {
 			// Do not check file existance since platform is storing files in

@@ -50,7 +50,7 @@
 		<downloadSources>true</downloadSources>
 
 		<spring.version>3.1.2.RELEASE</spring.version>
-		<tibudget.api.version>0.0.8</tibudget.api.version>
+		<tibudget.api.version>0.0.9-SNAPSHOT</tibudget.api.version>
 	</properties>
 	
 	<dependencies>
@@ -144,9 +144,9 @@
 				<configuration>
 					<archive>
 						<manifestEntries>
-							<Specification-Title>Ti'Budget Collector API</Specification-Title>
+							<Specification-Title>ti'Budget Collector API</Specification-Title>
 							<Specification-Version>${tibudget.api.version}</Specification-Version>
-							<Specification-Vendor>Ti'Budget</Specification-Vendor>
+							<Specification-Vendor>ti'Budget</Specification-Vendor>
 							<Implementation-Title>${project.name}</Implementation-Title>
 							<Implementation-Version>${project.version}</Implementation-Version>
 							<Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
@@ -159,9 +159,9 @@
 				<configuration>
 					<archive>
 						<manifestEntries>
-							<Specification-Title>Ti'Budget Collector API</Specification-Title>
+							<Specification-Title>ti'Budget Collector API</Specification-Title>
 							<Specification-Version>${tibudget.api.version}</Specification-Version>
-							<Specification-Vendor>Ti'Budget</Specification-Vendor>
+							<Specification-Vendor>ti'Budget</Specification-Vendor>
 							<Implementation-Title>${project.name}</Implementation-Title>
 							<Implementation-Version>${project.version}</Implementation-Version>
 							<Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
