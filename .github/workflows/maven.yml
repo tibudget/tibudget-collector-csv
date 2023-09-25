@@ -33,22 +33,24 @@ jobs:
         servers: |
           [{
               "id": "tibudget-repository-release",
-              "username": "${ secrets.AWS_GITHUB_KEY_ID }",
-              "password": "${ secrets.AWS_GITHUB_KEY_VALUE }"
+              "username": "${{ secrets.AWS_GITHUB_KEY_ID }}",
+              "password": "${{ secrets.AWS_GITHUB_KEY_VALUE }}"
           },{
               "id": "tibudget-repository-snapshot",
-              "username": "${ secrets.AWS_GITHUB_KEY_ID }",
-              "password": "${ secrets.AWS_GITHUB_KEY_VALUE }"
+              "username": "${{ secrets.AWS_GITHUB_KEY_ID }}",
+              "password": "${{ secrets.AWS_GITHUB_KEY_VALUE }}"
           }]
         repositories: |
           [{
             "id" : "tibudget-repository-release",
             "url" : "s3://tibudget-maven-repository/release",
-            "releases": { "enabled": "true" }, "snapshots": { "enabled": "false" } }
+            "releases": { "enabled": "true" }, 
+            "snapshots": { "enabled": "false" }
           },{
             "id" : "tibudget-repository-snapshot",
             "url" : "s3://tibudget-maven-repository/snapshot",
-            "releases": { "enabled": "false" }, "snapshots": { "enabled": "true" } }
+            "releases": { "enabled": "false" }, 
+            "snapshots": { "enabled": "true" }
           }]
     - name: Building with Maven
       run: mvn -B package --file pom.xml
