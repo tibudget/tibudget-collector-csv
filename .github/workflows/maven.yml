@@ -40,6 +40,14 @@ jobs:
               "username": "${{ secrets.AWS_GITHUB_KEY_ID }}",
               "password": "${{ secrets.AWS_GITHUB_KEY_VALUE }}"
           }]
+        repositories: |
+          [{
+            "id" : "tibudget-repository-release",
+            "url" : "s3://tibudget-maven-repository/release"
+          },{
+            "id" : "tibudget-repository-snapshot",
+            "url" : "s3://tibudget-maven-repository/snapshot"
+          }]
     - name: Building with Maven
       run: mvn -B package --file pom.xml
 
