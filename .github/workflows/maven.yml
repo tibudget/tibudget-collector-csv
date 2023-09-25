@@ -28,7 +28,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Creating setting.xml for Maven
-      uses: s4u/maven-settings-action@v2.8.0
+      uses: InstaCode/maven-settings-xml-action@v9
       with:
         servers: |
           [{
@@ -43,10 +43,12 @@ jobs:
         repositories: |
           [{
             "id" : "tibudget-repository-release",
-            "url" : "s3://tibudget-maven-repository/release"
+            "url" : "s3://tibudget-maven-repository/release",
+            "releases": { "enabled": "true" }, "snapshots": { "enabled": "false" } }
           },{
             "id" : "tibudget-repository-snapshot",
-            "url" : "s3://tibudget-maven-repository/snapshot"
+            "url" : "s3://tibudget-maven-repository/snapshot",
+            "releases": { "enabled": "false" }, "snapshots": { "enabled": "true" } }
           }]
     - name: Building with Maven
       run: mvn -B package --file pom.xml
