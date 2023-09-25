@@ -28,7 +28,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Creating setting.xml for Maven
-      uses: InstaCode/maven-settings-xml-action@v9
+      uses: whelk-io/maven-settings-xml-action@v21
       with:
         servers: |
           [{
