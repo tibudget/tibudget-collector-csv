@@ -33,12 +33,12 @@ jobs:
         servers: |
           [{
               "id": "tibudget-repository-release",
-              "username": "${{ secrets.AWS_GITHUB_KEY_ID }}",
-              "password": "${{ secrets.AWS_GITHUB_KEY_VALUE }}"
+              "username": "${ secrets.AWS_GITHUB_KEY_ID }",
+              "password": "${ secrets.AWS_GITHUB_KEY_VALUE }"
           },{
               "id": "tibudget-repository-snapshot",
-              "username": "${{ secrets.AWS_GITHUB_KEY_ID }}",
-              "password": "${{ secrets.AWS_GITHUB_KEY_VALUE }}"
+              "username": "${ secrets.AWS_GITHUB_KEY_ID }",
+              "password": "${ secrets.AWS_GITHUB_KEY_VALUE }"
           }]
         repositories: |
           [{
