@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	
+
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.tibudget</groupId>
 	<artifactId>tibudget-collector-csv</artifactId>
@@ -13,47 +13,38 @@
 	<organization><name>Ti'Budget</name></organization>
 
 	<scm>
-		<connection>scm:git:ssh://git@git.cloudbees.com/tibudget/tibudget-collector-csv.git</connection>
-		<url>https://git.cloudbees.com/tibudget/tibudget-collector-csv.git</url>
-		<developerConnection>scm:git:ssh://git@git.cloudbees.com/tibudget/tibudget-collector-csv.git</developerConnection>
-	  <tag>HEAD</tag>
-  </scm>
+		<connection>scm:git:${project.scm.url}</connection>
+		<developerConnection>scm:git:${project.scm.url}</developerConnection>
+		<url>git@github.com:tibudget/tibudget-collector-csv.git</url>
+		<tag>HEAD</tag>
+	</scm>
 
 	<distributionManagement>
 		<repository>
-			<id>cloudbees-private-repository</id>
-			<url>dav:https://repository-tibudget.forge.cloudbees.com/release/</url>
+			<id>tibudget-repository-release</id>
+			<name>tibudget Release Repository</name>
+			<url>s3://tibudget-maven-repository/release</url>
 		</repository>
 		<snapshotRepository>
-			<id>cloudbees-private-repository</id>
-			<url>dav:https://repository-tibudget.forge.cloudbees.com/snapshot/</url>
+			<id>tibudget-repository-snapshot</id>
+			<name>tibudget Snapshot Repository</name>
+			<url>s3://tibudget-maven-repository/snapshot</url>
 		</snapshotRepository>
 	</distributionManagement>
-
-	<repositories>
-		<repository>
-			<id>cloudbees-releases</id>
-			<url>https://repository-tibudget.forge.cloudbees.com/release/</url>
-		</repository>
-		<repository>
-			<id>cloudbees-snapshots</id>
-			<url>https://repository-tibudget.forge.cloudbees.com/snapshot/</url>
-		</repository>
-	</repositories>
 
 	<!-- Specify hard-coded project properties here -->
 	<properties>
 		<!-- To make the build platform independant -->
 		<project.build.sourceEncoding>ISO-8859-1</project.build.sourceEncoding>
 
-		<!-- This is just for "eclipse:eclipse" goal to always attempt downloading 
+		<!-- This is just for "eclipse:eclipse" goal to always attempt downloading
 			sources -->
 		<downloadSources>true</downloadSources>
 
 		<spring.version>3.1.2.RELEASE</spring.version>
 		<tibudget.api.version>0.0.9-SNAPSHOT</tibudget.api.version>
 	</properties>
-	
+
 	<dependencies>
 
 		<!-- For CSV parsing -->
@@ -69,7 +60,7 @@
 			<artifactId>commons-math</artifactId>
 			<version>2.1</version>
 		</dependency>
-		
+
 		<!-- Test scope -->
 		<dependency>
 			<groupId>junit</groupId>
@@ -120,10 +111,9 @@
 	<build>
 		<extensions>
 			<extension>
-				<!-- Needed to deploy artifact using dav protocol -->
-				<groupId>org.apache.maven.wagon</groupId>
-				<artifactId>wagon-webdav-jackrabbit</artifactId>
-				<version>2.3</version>
+				<groupId>com.github.seahen</groupId>
+				<artifactId>maven-s3-wagon</artifactId>
+				<version>1.3.3</version>
 			</extension>
 		</extensions>
 		<plugins>
@@ -131,10 +121,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
+				<version>3.11.0</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>11</source>
+					<target>11</target>
 					<encoding>${project.build.sourceEncoding}</encoding>
 				</configuration>
 			</plugin>
@@ -193,7 +183,7 @@
 			</plugin>
 		</plugins>
 	</build>
-	
+
 	<reporting>
 		<plugins>
 			<plugin>
@@ -245,30 +235,30 @@
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>taglist-maven-plugin</artifactId>
 				<version>2.4</version>
-		        <configuration>
-		          <tagListOptions>
-		            <tagClasses>
-		              <tagClass>
-		                <displayName>To be done</displayName>
-		                <tags>
-		                  <tag>
-		                    <matchString>TODO</matchString>
-		                    <matchType>exact</matchType>
-		                  </tag>
-		                </tags>
-		              </tagClass>
-		              <tagClass>
-		                <displayName>To be fixed!</displayName>
-		                <tags>
-		                  <tag>
-		                    <matchString>FIXME</matchString>
-		                    <matchType>exact</matchType>
-		                  </tag>
-		                </tags>
-		              </tagClass>
-		            </tagClasses>
-		          </tagListOptions>
-		        </configuration>
+				<configuration>
+					<tagListOptions>
+						<tagClasses>
+							<tagClass>
+								<displayName>To be done</displayName>
+								<tags>
+									<tag>
+										<matchString>TODO</matchString>
+										<matchType>exact</matchType>
+									</tag>
+								</tags>
+							</tagClass>
+							<tagClass>
+								<displayName>To be fixed!</displayName>
+								<tags>
+									<tag>
+										<matchString>FIXME</matchString>
+										<matchType>exact</matchType>
+									</tag>
+								</tags>
+							</tagClass>
+						</tagClasses>
+					</tagListOptions>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
