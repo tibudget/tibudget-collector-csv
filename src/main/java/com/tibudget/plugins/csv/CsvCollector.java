@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -21,26 +22,27 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 
 import au.com.bytecode.opencsv.CSVReader;
 
 import com.tibudget.api.ICollectorPlugin;
 import com.tibudget.api.Input;
 import com.tibudget.api.exceptions.CollectError;
+import com.tibudget.api.exceptions.MessagesException;
 import com.tibudget.api.exceptions.ParameterError;
-import com.tibudget.dto.BankAccountDto;
-import com.tibudget.dto.BankOperationDto;
-import com.tibudget.dto.BankOperationDto.Type;
+import com.tibudget.dto.AccountDto;
+import com.tibudget.dto.OperationDto;
+import com.tibudget.dto.OperationDto.OperationDtoType;
 import com.tibudget.dto.MessageDto;
+
+import static java.lang.Math.abs;
 
 public class CsvCollector implements ICollectorPlugin {
 
-	private static Logger LOG = LoggerFactory.getLogger(CsvCollector.class);
+	private static final Logger LOG = Logger.getLogger(CsvCollector.class.getName());
 	
-	public static final Charset DEFAULT_CHARSET = Charset.forName("utf-8");
+	public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
 	// messages: <pluginid>_fr.properties + file.label= + file.help=
 
@@ -48,7 +50,7 @@ public class CsvCollector implements ICollectorPlugin {
 	private boolean auto = true;
 
 	@Input(fieldset="fs1", order=0, required=false)
-	private BankAccountDto bankAccount;
+	private AccountDto account;
 
 	@Input(fieldset="fs1", order=1, required=true)
 	private File file;
@@ -86,7 +88,7 @@ public class CsvCollector implements ICollectorPlugin {
 	@Input(fieldset="fsmanual", order=4, required=true)
 	private char colSeparator = ',';
 
-	private List<BankOperationDto> bankOperationsDtos;
+	private List<OperationDto> operationsDtos;
 
 	private int progress = 0;
 
@@ -94,12 +96,16 @@ public class CsvCollector implements ICollectorPlugin {
 		super();
 	}
 
+	public CsvCollector(File file) {
+		super();
+		this.file = file;
+	}
+
 	public CsvCollector(File file, boolean auto, int dateOperationIndex,
 			int dateValueIndex, int labelIndex, int creditIndex,
 			int debitIndex, int valueIndex, char colSeparator,
 			boolean skipFirstRow, String dateFormat, String numberFormat, char decimalSeparator) {
-		super();
-		this.file = file;
+		this(file);
 		this.auto = auto;
 		this.dateOperationIndex = dateOperationIndex;
 		this.dateValueIndex = dateValueIndex;
@@ -121,7 +127,7 @@ public class CsvCollector implements ICollectorPlugin {
 	 * @throws ParameterError
 	 */
 	@Override
-	public void collect(Iterable<BankAccountDto> bankAccounts) throws CollectError, ParameterError {
+	public void collect(Iterable<AccountDto> lastCollect) throws CollectError, ParameterError {
 
 		this.progress = 0;
 
@@ -129,7 +135,7 @@ public class CsvCollector implements ICollectorPlugin {
 			initAuto();
 		}
 
-		this.bankOperationsDtos = new ArrayList<BankOperationDto>();
+		this.operationsDtos = new ArrayList<OperationDto>();
 		int lineCount = CsvCollector.getLineCount(this.file);
 		int count = 0;
 		Reader reader = null;
@@ -151,75 +157,91 @@ public class CsvCollector implements ICollectorPlugin {
 				setDateValueIndex(getDateOperationIndex());
 			}
 			while ((nextLine = csvReader.readNext()) != null) {
-				if (nextLine.length == 0 || (nextLine.length==1 && nextLine[0].length() == 0)) {
+				if (nextLine.length == 0 || (nextLine.length==1 && nextLine[0].isEmpty())) {
 					// Ignore empty line
 					continue;
 				}
-				// Date value
-				Date dateValue = null;
 				try {
-					String dateStr = nextLine[getDateValueIndex() - 1].trim();
-					dateValue = fmt.parse(dateStr);
-					if (!fmt.format(dateValue).equals(dateStr)) {
-						if (auto) {
-							throw new CollectError("collect.error.date", dateStr, dateValue);
+					// Date value
+					Date dateValue = null;
+					try {
+						String dateStr = nextLine[getDateValueIndex() - 1].trim();
+						dateValue = fmt.parse(dateStr);
+						if (!fmt.format(dateValue).equals(dateStr)) {
+							if (auto) {
+								throw new CollectError("collect.error.date", dateStr, dateValue);
+							} else {
+								throw new ParameterError("dateFormat", "form.error.dateFormat.parsing", dateStr, dateValue);
+							}
 						}
-						else {
-							throw new ParameterError("dateFormat", "form.error.dateFormat.parsing", dateStr, dateValue);
-						}
-					}
-				} catch (ParseException e) {
-					if (this.auto) {
-						throw new CollectError("collect.error.date.parse.auto", nextLine[getDateValueIndex() - 1]);
-					}
-					else {
-						throw new ParameterError("dateFormat", "form.error.dateFormat.parsing2", nextLine[getDateValueIndex() - 1]);
-					}
-				}
-				// Date operation
-				Date dateOperation = null;
-				try {
-					dateOperation = fmt.parse(nextLine[getDateOperationIndex() - 1]);
-				} catch (ParseException e) {
-					if (this.auto) {
-						throw new CollectError("collect.error.date.parse.auto", nextLine[getDateValueIndex() - 1]);
-					}
-					else {
-						throw new ParameterError("dateFormat", "form.error.dateFormat.parsing2", nextLine[getDateValueIndex() - 1]);
-					}
-				}
-				// Label
-				String label = nextLine[getLabelIndex() - 1].trim();
-				// Value
-				Double value = null;
-				if (getValueIndex() > 0) {
-					String valueStr = nextLine[getValueIndex() - 1].trim();
-					value = parseNumber(valueStr);
-				}
-				else {
-					Double credit = 0.0, debit = 0.0;
-					if (getCreditIndex() <= nextLine.length) {
-						String creditStr = nextLine[getCreditIndex() - 1].trim();
-						if (creditStr.length() > 0) {
-							credit = parseNumber(creditStr);
+					} catch (ParseException e) {
+						if (this.auto) {
+							throw new CollectError("collect.error.date.parse.auto", nextLine[getDateValueIndex() - 1]);
+						} else {
+							throw new ParameterError("dateFormat", "form.error.dateFormat.parsing2", nextLine[getDateValueIndex() - 1]);
 						}
 					}
-					if (getDebitIndex() <= nextLine.length) {
-						String debitStr = nextLine[getDebitIndex() - 1].trim();
-						if (debitStr.length() > 0) {
-							debit = parseNumber(debitStr);
+					// Date operation
+					Date dateOperation = null;
+					try {
+						dateOperation = fmt.parse(nextLine[getDateOperationIndex() - 1]);
+					} catch (ParseException e) {
+						if (this.auto) {
+							throw new CollectError("collect.error.date.parse.auto", nextLine[getDateValueIndex() - 1]);
+						} else {
+							throw new ParameterError("dateFormat", "form.error.dateFormat.parsing2", nextLine[getDateValueIndex() - 1]);
 						}
 					}
-					value = credit - debit;
-				}
+					// Label
+					String label = nextLine[getLabelIndex() - 1].trim();
+					// Value
+					Double value = null;
+					if (getValueIndex() > 0) {
+						String valueStr = nextLine[getValueIndex() - 1].trim();
+						value = parseNumber(valueStr);
+					} else {
+						double credit = 0.0, debit = 0.0;
+						if (getCreditIndex() <= nextLine.length) {
+							String creditStr = nextLine[getCreditIndex() - 1].trim();
+							if (!creditStr.isEmpty()) {
+								credit = parseNumber(creditStr);
+							}
+						}
+						if (getDebitIndex() <= nextLine.length) {
+							String debitStr = nextLine[getDebitIndex() - 1].trim();
+							if (!debitStr.isEmpty()) {
+								// Yes, some files contains negative values in the debit column so I prefer take the
+								// absolute value
+								debit = abs(parseNumber(debitStr));
+							}
+						}
+						value = credit - debit;
+					}
 
-				// Create operation
-				BankOperationDto op = new BankOperationDto(Type.OTHER, dateValue, dateOperation, label, value);
-				op.setAccountId(this.bankAccount.getTitle());
-				this.bankOperationsDtos.add(op);
-				
-				// Balance will always be correct
-				this.bankAccount.setCurrentBalance(this.bankAccount.getCurrentBalance() + op.getValue());
+					// Create operation
+					OperationDto op = new OperationDto(
+							this.account.getUuid(),
+							"",
+							OperationDtoType.OTHER,
+							dateOperation,
+							dateValue,
+							label,
+							"",
+							value
+					);
+					this.operationsDtos.add(op);
+
+					// Balance will always be correct
+					this.account.setCurrentBalance(this.account.getCurrentBalance() + op.getValue());
+
+				} catch (MessagesException e) {
+					long lineNumber = count + 1;
+					if (isSkipFirstRow()) {
+						lineNumber++;
+					}
+					LOG.info("Ignored line #" + lineNumber + ": "+String.join(String.valueOf(getColSeparator()), nextLine)+"(" + e.getMessage() + ")");
+					throw e;
+				}
 
 				// update progress
 				count++;
@@ -243,21 +265,21 @@ public class CsvCollector implements ICollectorPlugin {
 				try {
 					csvReader.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			if (reader != null) {
 				try {
 					reader.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			if (is != null) {
 				try {
 					is.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			this.progress = 100;
@@ -265,14 +287,14 @@ public class CsvCollector implements ICollectorPlugin {
 	}
 
 	private double parseNumber(String numberStr) throws ParameterError, CollectError {
-		Double value = null;
+		Double value;
 		if (getNumberFormat() != null) {
 			DecimalFormatSymbols symb = new DecimalFormatSymbols(Locale.US);
 			symb.setDecimalSeparator(getDecimalSeparator());
 			NumberFormat numberFormat = new DecimalFormat(getNumberFormat(), symb);
 			ParsePosition pp = new ParsePosition(0);
 			value = numberFormat.parse(numberStr, pp).doubleValue();
-			if (numberStr.length() != pp.getIndex() || value == null) {
+			if (numberStr.length() != pp.getIndex()) {
 				if (auto) {
 					throw new ParameterError("numberFormat", "form.error.numberFormat.parsing", value, numberStr);
 				}
@@ -310,13 +332,13 @@ public class CsvCollector implements ICollectorPlugin {
 	}
 
 	@Override
-	public Iterable<BankAccountDto> getBankAccounts() {
-		return Collections.singleton(this.bankAccount);
+	public Iterable<AccountDto> getAccounts() {
+		return Collections.singleton(this.account);
 	}
 
 	@Override
-	public Iterable<BankOperationDto> getBankOperations() {
-		return this.bankOperationsDtos;
+	public Iterable<OperationDto> getOperations() {
+		return this.operationsDtos;
 	}
 
 	public void setFile(File file) {
@@ -425,9 +447,9 @@ public class CsvCollector implements ICollectorPlugin {
 
 	@Override
 	public Collection<MessageDto> validate() {
-		List<MessageDto> msg = new ArrayList<MessageDto>();
-		if (this.bankAccount == null) {
-			this.bankAccount = new BankAccountDto(UUID.randomUUID().toString(), com.tibudget.dto.BankAccountDto.Type.OTHER, "CSV account", "Import CSV", 0.0);
+		List<MessageDto> msg = new ArrayList<>();
+		if (this.account == null) {
+			this.account = new AccountDto(UUID.randomUUID().toString(), com.tibudget.dto.AccountDto.AccountDtoType.OTHER, "CSV account", "Import CSV", 0.0);
 		}
 		if (this.file == null) {
 			// Do not check file existance since platform is storing files in
@@ -517,28 +539,28 @@ public class CsvCollector implements ICollectorPlugin {
 				try {
 					buffer.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			if (reader != null) {
 				try {
 					reader.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			if (is != null) {
 				try {
 					is.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 		}
 		return count;
 	}
 
-	public void setBankAccount(BankAccountDto bankAccount) {
-		this.bankAccount = bankAccount;
+	public void etBankAccount(AccountDto bankAccount) {
+		this.account = bankAccount;
 	}
 }

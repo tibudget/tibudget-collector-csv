@@ -2,128 +2,127 @@ package com.tibudget.plugins.csv;
 
 import java.text.DecimalFormat;
 
-
 public class CsvFormat {
 
-	int dateOperationIndex = -1;
-	
-	int dateValueIndex = -1;
-	
-	int labelIndex = -1;
-	
-	int creditIndex = -1;
-	
-	int debitIndex = -1;
+    int dateOperationIndex = -1;
 
-	int valueIndex = -1;
-	
-	char colSeparator = ',';
-	
-	boolean skipFirstRow = true;
-	
-	String dateFormat;
-	
-	DecimalFormat valueFormat;
-	
-	public CsvFormat(char colSeparator, boolean skipFirstRow, String dateFormat) {
-		super();
-		this.colSeparator = colSeparator;
-		this.skipFirstRow = skipFirstRow;
-		this.dateFormat = dateFormat;
-	}
+    int dateValueIndex = -1;
 
-	public CsvFormat(int dateOperationIndex, int dateValueIndex, int labelIndex, int creditIndex, int debitIndex, int valueIndex, char colSeparator,
-			boolean skipFirstRow, String dateFormat, DecimalFormat valueFormat) {
-		super();
-		this.dateOperationIndex = dateOperationIndex;
-		this.dateValueIndex = dateValueIndex;
-		this.labelIndex = labelIndex;
-		this.creditIndex = creditIndex;
-		this.debitIndex = debitIndex;
-		this.valueIndex = valueIndex;
-		this.colSeparator = colSeparator;
-		this.skipFirstRow = skipFirstRow;
-		this.dateFormat= dateFormat;
-		this.valueFormat = valueFormat;
-	}
+    int labelIndex = -1;
 
-	public int getDateOperationIndex() {
-		return dateOperationIndex;
-	}
+    int creditIndex = -1;
 
-	public void setDateOperationIndex(int dateOperationIndex) {
-		this.dateOperationIndex = dateOperationIndex;
-	}
+    int debitIndex = -1;
 
-	public int getDateValueIndex() {
-		return dateValueIndex;
-	}
+    int valueIndex = -1;
 
-	public void setDateValueIndex(int dateValueIndex) {
-		this.dateValueIndex = dateValueIndex;
-	}
+    char colSeparator = ',';
 
-	public int getLabelIndex() {
-		return labelIndex;
-	}
+    boolean skipFirstRow = true;
 
-	public void setLabelIndex(int labelIndex) {
-		this.labelIndex = labelIndex;
-	}
+    String dateFormat;
 
-	public int getCreditIndex() {
-		return creditIndex;
-	}
+    DecimalFormat valueFormat;
 
-	public void setCreditIndex(int creditIndex) {
-		this.creditIndex = creditIndex;
-	}
+    public CsvFormat(char colSeparator, boolean skipFirstRow, String dateFormat) {
+        super();
+        this.colSeparator = colSeparator;
+        this.skipFirstRow = skipFirstRow;
+        this.dateFormat = dateFormat;
+    }
 
-	public int getDebitIndex() {
-		return debitIndex;
-	}
+    public CsvFormat(int dateOperationIndex, int dateValueIndex, int labelIndex, int creditIndex, int debitIndex, int valueIndex, char colSeparator,
+                     boolean skipFirstRow, String dateFormat, DecimalFormat valueFormat) {
+        super();
+        this.dateOperationIndex = dateOperationIndex;
+        this.dateValueIndex = dateValueIndex;
+        this.labelIndex = labelIndex;
+        this.creditIndex = creditIndex;
+        this.debitIndex = debitIndex;
+        this.valueIndex = valueIndex;
+        this.colSeparator = colSeparator;
+        this.skipFirstRow = skipFirstRow;
+        this.dateFormat = dateFormat;
+        this.valueFormat = valueFormat;
+    }
 
-	public void setDebitIndex(int debitIndex) {
-		this.debitIndex = debitIndex;
-	}
+    public int getDateOperationIndex() {
+        return dateOperationIndex;
+    }
 
-	public int getValueIndex() {
-		return valueIndex;
-	}
+    public void setDateOperationIndex(int dateOperationIndex) {
+        this.dateOperationIndex = dateOperationIndex;
+    }
 
-	public void setValueIndex(int valueIndex) {
-		this.valueIndex = valueIndex;
-	}
+    public int getDateValueIndex() {
+        return dateValueIndex;
+    }
 
-	public char getColSeparator() {
-		return colSeparator;
-	}
+    public void setDateValueIndex(int dateValueIndex) {
+        this.dateValueIndex = dateValueIndex;
+    }
 
-	public void setColSeparator(char colSeparator) {
-		this.colSeparator = colSeparator;
-	}
+    public int getLabelIndex() {
+        return labelIndex;
+    }
 
-	public boolean isSkipFirstRow() {
-		return skipFirstRow;
-	}
+    public void setLabelIndex(int labelIndex) {
+        this.labelIndex = labelIndex;
+    }
 
-	public void setSkipFirstRow(boolean skipFirstRow) {
-		this.skipFirstRow = skipFirstRow;
-	}
+    public int getCreditIndex() {
+        return creditIndex;
+    }
 
-	public String getDateFormat() {
-		return dateFormat;
-	}
+    public void setCreditIndex(int creditIndex) {
+        this.creditIndex = creditIndex;
+    }
 
-	public void setDateFormat(String dateFormat) {
-		this.dateFormat = dateFormat;
-	}
+    public int getDebitIndex() {
+        return debitIndex;
+    }
 
-	public DecimalFormat getValueFormat() {
-		return valueFormat;
-	}
+    public void setDebitIndex(int debitIndex) {
+        this.debitIndex = debitIndex;
+    }
 
-	public void setValueFormat(DecimalFormat valueFormat) {
-		this.valueFormat = valueFormat;
-	}
+    public int getValueIndex() {
+        return valueIndex;
+    }
+
+    public void setValueIndex(int valueIndex) {
+        this.valueIndex = valueIndex;
+    }
+
+    public char getColSeparator() {
+        return colSeparator;
+    }
+
+    public void setColSeparator(char colSeparator) {
+        this.colSeparator = colSeparator;
+    }
+
+    public boolean isSkipFirstRow() {
+        return skipFirstRow;
+    }
+
+    public void setSkipFirstRow(boolean skipFirstRow) {
+        this.skipFirstRow = skipFirstRow;
+    }
+
+    public String getDateFormat() {
+        return dateFormat;
+    }
+
+    public void setDateFormat(String dateFormat) {
+        this.dateFormat = dateFormat;
+    }
+
+    public DecimalFormat getValueFormat() {
+        return valueFormat;
+    }
+
+    public void setValueFormat(DecimalFormat valueFormat) {
+        this.valueFormat = valueFormat;
+    }
 }

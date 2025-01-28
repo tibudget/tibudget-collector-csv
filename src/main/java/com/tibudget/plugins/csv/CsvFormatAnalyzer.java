@@ -1,57 +1,23 @@
 package com.tibudget.plugins.csv;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.Serializable;
+import au.com.bytecode.opencsv.CSVReader;
+import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
+
+import java.io.*;
 import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import au.com.bytecode.opencsv.CSVReader;
+import java.util.*;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CsvFormatAnalyzer {
 
-	private static Logger LOG = LoggerFactory.getLogger(CsvFormatAnalyzer.class);
+	private static final Logger LOG = Logger.getLogger(CsvFormatAnalyzer.class.getName());
 
 	private static final int ANALYZE_LINE_COUNT = 100;
-
-	private static final String[] DATE_FORMATS = new String[] {
-		"yyyyddMM",
-		"MMddyyyy",
-		"yyyyMMdd",
-		"ddMMyyyy",
-		"yyyy-dd-MM",
-		"MM-dd-yyyy",
-		"yyyy-MM-dd",
-		"dd-MM-yyyy",
-		"yyyy/dd/MM",
-		"MM/dd/yyyy",
-		"yyyy/MM/dd",
-		"dd/MM/yyyy",
-		"MMM dd yyyy",
-		"MMMM dd yyyy",
-		"dd MMM yyyy",
-	"dd MMMM yyyy"};
 
 	private static class ColumnStats {
 		int index;
@@ -161,14 +127,14 @@ public class CsvFormatAnalyzer {
 			// Analyze first line
 			String[] nextLine = csvReader.readNext();
 			for (String element : nextLine) {
-				if (determineDateFormat(Collections.singletonList(element)).size() > 0) {
+				if (!DateFormatUtils.determineDateFormat(Collections.singletonList(element)).isEmpty()) {
 					skipFirstLine = false;
 				}
 			}
 			// Parse next lines
 			ParsePosition pp = new ParsePosition(0);
 			while (lineCount < ANALYZE_LINE_COUNT && (nextLine = csvReader.readNext()) != null) {
-				if (nextLine.length == 0 || (nextLine.length==1 && nextLine[0].length() == 0)) {
+				if (nextLine.length == 0 || (nextLine.length==1 && nextLine[0].isEmpty())) {
 					// Ignore empty line
 					continue;
 				}
@@ -183,7 +149,7 @@ public class CsvFormatAnalyzer {
 						colStats.put(colIndex, colStat);
 					}
 					colStat.getLengthStat().addValue(value.length());
-					if (value.length() > 0) {
+					if (!value.isEmpty()) {
 						double digitCount = 0;
 						double letterCount = 0;
 						// Value (Number)
@@ -221,21 +187,21 @@ public class CsvFormatAnalyzer {
 				try {
 					csvReader.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			if (reader != null) {
 				try {
 					reader.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			if (is != null) {
 				try {
 					is.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 		}
@@ -246,33 +212,35 @@ public class CsvFormatAnalyzer {
 					+ " probaDate=" + computeDateProbability(colStat)
 					+ " probaNumber=" + computeNumberProbability(colStat)
 					+ " probaLabel=" + computeLabelProbability(colStat)
-					+ " length=" + colStat.getLengthStat().getMean()
-					+ " length dev=" + colStat.getLengthStat().getStandardDeviation()
-					+ " date symbol sum=" + colStat.getDateStat().getSum()
-					+ " date symbol n=" + colStat.getDateStat().getN()
-					+ " number symbol min=" + colStat.getNumberStat().getMin()
-					+ " number symbol n=" + colStat.getNumberStat().getN()
-					+ " letter percent=" + colStat.getLetterPercentStat().getMean()
-					+ " letter percent dev=" + colStat.getLetterPercentStat().getStandardDeviation()
-					+ " digit percent=" + colStat.getDigitPercentStat().getMean()
-					+ " digit percent dev=" + colStat.getDigitPercentStat().getStandardDeviation()
+					+ " length_avg=" + colStat.getLengthStat().getMean()
+					+ " date_N=" + colStat.getDateStat().getN()
+					+ " number_min=" + colStat.getNumberStat().getMin()
+					+ " number_max=" + colStat.getNumberStat().getMax()
+					+ " number_N=" + colStat.getNumberStat().getN()
+					+ " letter_%_avg=" + colStat.getLetterPercentStat().getMean()
+					+ " digit_%_avg=" + colStat.getDigitPercentStat().getMean()
 					);
 		}
 
 		// Sort by 'date probability'
 		List<ColumnStats> colStatsList = new ArrayList<ColumnStats>(colStats.values());
-		Collections.sort(colStatsList, new ProbabilityDateComparator());
+		colStatsList.sort(new ProbabilityDateComparator());
 		int firstDateColIndex = colStatsList.get(0).getIndex();
 		int secondDateColIndex = colStatsList.get(1).getIndex();
 
-		// Sort by 'number probability'
-		Collections.sort(colStatsList, new ProbabilityNumberComparator());
-		int firstNumberColIndex = colStatsList.get(0).getIndex();
-		int secondNumberColIndex = colStatsList.get(1).getIndex();
-
 		// Sort by 'label probability'
-		Collections.sort(colStatsList, new ProbabilityLabelComparator());
+		colStatsList.sort(new ProbabilityLabelComparator());
 		int labelColIndex = colStatsList.get(0).getIndex();
+
+		// Sort by 'number probability'
+		List<ColumnStats> numberCols = colStatsList.stream().filter(
+				columnStats -> computeNumberProbability(columnStats) > 0.5
+		).sorted(
+				(c1, c2) -> (int) (c2.getNumberStat().getN() - c1.getNumberStat().getN())
+		).collect(Collectors.toList());
+		int firstNumberColIndex = !numberCols.isEmpty() ? numberCols.get(0).getIndex() : -1;
+		int secondNumberColIndex = numberCols.size() > 1 ? numberCols.get(1).getIndex() : -1;
+		int thirdNumberColIndex = numberCols.size() > 2 ? numberCols.get(2).getIndex() : -1;
 
 		// Guess which column is 'operation date' or 'value date' and
 		// which one is 'credit', 'debit' or 'value'
@@ -296,16 +264,35 @@ public class CsvFormatAnalyzer {
 				format.setDateValueIndex(firstDateColIndex);
 			}
 		}
-		if (colStats.get(firstNumberColIndex).getNumberStat().getMin() < 0.0) {
-			// Negative values mean that credit and debit are in the same column
+		// If a column represent the value (negative and positive) or the new amount of the account if will contains
+		// ANALYZE_LINE_COUNT values and it will be sorted on first place because of probabilities.
+		long n1 = firstNumberColIndex >= 0 ? colStats.get(firstNumberColIndex).getNumberStat().getN() : 0;
+		long n2 = secondNumberColIndex >= 0 ? colStats.get(secondNumberColIndex).getNumberStat().getN() : 0;
+		long n3 = thirdNumberColIndex >= 0 ? colStats.get(thirdNumberColIndex).getNumberStat().getN() : 0;
+		if (n1 == lineCount && (n2 != lineCount || n3 != lineCount)) {
+			// All lines have a value and not others so this column is the amount of the operation
+			// or the new amount of the account
 			format.setValueIndex(firstNumberColIndex);
 			format.setCreditIndex(-1);
 			format.setDebitIndex(-1);
+			// If this is the new amount of the account that means credit and debit column are present; let's check
+			if ((n2 + n3) == n1) {
+				format.setValueIndex(-1);
+				// Heuristics: more values in debit column :-)
+				if (n2 < n3) {
+					format.setCreditIndex(secondNumberColIndex);
+					format.setDebitIndex(thirdNumberColIndex);
+				}
+				else {
+					format.setCreditIndex(thirdNumberColIndex);
+					format.setDebitIndex(secondNumberColIndex);
+				}
+			}
 		}
 		else {
 			format.setValueIndex(-1);
 			// Heuristics: more values in debit column :-)
-			if (colStats.get(firstNumberColIndex).getNumberStat().getN() < colStats.get(secondNumberColIndex).getNumberStat().getN()) {
+			if (n1 < n2) {
 				format.setCreditIndex(firstNumberColIndex);
 				format.setDebitIndex(secondNumberColIndex);
 			}
@@ -361,8 +348,38 @@ public class CsvFormatAnalyzer {
 	}
 
 	private static double computeLabelProbability(ColumnStats colStats) {
-		double proba = (2.0 - (computeDateProbability(colStats) + computeNumberProbability(colStats))) / 2;
-		return proba;
+		double lengthMean = colStats.getLengthStat().getMean();
+		double digitMean = colStats.getDigitPercentStat().getMean();
+		double letterMean = colStats.getLetterPercentStat().getMean();
+
+		// Define ideal values for the parameters
+		double idealLengthMin = 10; // Minimum value of the ideal range for length
+		double idealLengthMax = 200; // Maximum value of the ideal range for length
+		double idealDigitMean = 0.2;
+		double idealLetterMean = 0.8;
+
+		// Calculate individual probabilities
+		double lengthProba = rangeGaussian(lengthMean, idealLengthMin, idealLengthMax, 4); // Handles a range for lengthMean
+		double digitProba = gauss(digitMean, idealDigitMean, 0.2); // Narrow deviation for digitMean
+		double letterProba = gauss(letterMean, idealLetterMean, 0.2); // Narrow deviation for letterMean
+
+		// Combine the probabilities by multiplying them
+        return lengthProba * digitProba * letterProba;
+	}
+
+	private static double gauss(double x, double mu, double sigma) {
+		return Math.exp(-Math.pow(x - mu, 2) / (2 * Math.pow(sigma, 2)));
+	}
+
+	// Gaussian-like function for a range of ideal values
+	public static double rangeGaussian(double x, double min, double max, double sigma) {
+		if (x < min) {
+			return gauss(x, min, sigma); // Penalize values below the minimum
+		} else if (x > max) {
+			return gauss(x, max, sigma); // Penalize values above the maximum
+		} else {
+			return 1.0; // Values within the range are ideal and return a probability of 1
+		}
 	}
 
 	private static String findDatePattern(File file, char sep) throws IOException {
@@ -381,7 +398,7 @@ public class CsvFormatAnalyzer {
 			String[] nextLine = csvReader.readNext();
 			// Determine in which column we have dates
 			for (int i = 0; i < nextLine.length; i++) {
-				if (determineDateFormat(Collections.singletonList(nextLine[i].trim())).size() > 0) {
+				if (DateFormatUtils.determineDateFormat(Collections.singletonList(nextLine[i].trim())).size() > 0) {
 					if (firstDateCol >= 0) {
 						secondDateCol = i;
 						datesString.add(nextLine[secondDateCol].trim());
@@ -407,7 +424,7 @@ public class CsvFormatAnalyzer {
 				}
 			}
 			// Choose first compatible format
-			Set<String> formats = determineDateFormat(datesString);
+			Set<String> formats = DateFormatUtils.determineDateFormat(datesString);
 			if (formats.size() > 0) {
 				selectedFormat = formats.iterator().next();
 			}
@@ -417,21 +434,21 @@ public class CsvFormatAnalyzer {
 				try {
 					csvReader.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			if (reader != null) {
 				try {
 					reader.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			if (is != null) {
 				try {
 					is.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 		}
@@ -454,7 +471,7 @@ public class CsvFormatAnalyzer {
 			String[] nextLine = csvReader.readNext();
 			// Determine in which column we have values
 			for (int i = 0; i < nextLine.length; i++) {
-				if (determineValueFormat(Collections.singletonList(nextLine[i].trim())).size() > 0) {
+				if (!ValueFormatUtils.determineValueFormat(Collections.singletonList(nextLine[i].trim())).isEmpty()) {
 					if (firstValueCol >= 0) {
 						secondValueCol = i;
 						valuesString.add(nextLine[secondValueCol].trim());
@@ -480,8 +497,8 @@ public class CsvFormatAnalyzer {
 				}
 			}
 			// Choose first compatible format
-			Set<DecimalFormat> formats = determineValueFormat(valuesString);
-			if (formats.size() > 0) {
+			Set<DecimalFormat> formats = ValueFormatUtils.determineValueFormat(valuesString);
+			if (!formats.isEmpty()) {
 				selectedFormat = formats.iterator().next();
 			}
 		}
@@ -490,21 +507,21 @@ public class CsvFormatAnalyzer {
 				try {
 					csvReader.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			if (reader != null) {
 				try {
 					reader.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 			if (is != null) {
 				try {
 					is.close();
 				} catch (IOException e) {
-					LOG.debug("Ignoring IOException: " + e.getMessage());
+					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
 			}
 		}
@@ -553,7 +570,7 @@ public class CsvFormatAnalyzer {
 					stat.addValue(count);
 				}
 				stats.put(c, stat);
-				LOG.debug(c + "] geomean=" + stat.getGeometricMean()
+				LOG.fine(c + "] geomean=" + stat.getGeometricMean()
 						+ " mean=" + stat.getMean()
 						+ " variance=" + stat.getVariance()
 						+ " deviation=" + stat.getStandardDeviation()
@@ -587,74 +604,4 @@ public class CsvFormatAnalyzer {
 		return currentChar;
 	}
 
-	/**
-	 * Return a set of accepted date format for this collection of date strings
-	 * @param datesString List of dates string
-	 * @return A set of accepted date format for this collection of date strings
-	 */
-	private static Set<String> determineDateFormat(Iterable<String> datesString) {
-		Set<String> acceptFormats = new HashSet<String>();
-		Set<String> rejectFormats = new HashSet<String>();
-		ParsePosition pp = new ParsePosition(0);
-		for (String dateString : datesString) {
-			for (String format : DATE_FORMATS) {
-				SimpleDateFormat simpleDateFormat = new SimpleDateFormat(format);
-				// Don't automatically convert invalid date.
-				simpleDateFormat.setLenient(false);
-				pp.setErrorIndex(-1); pp.setIndex(0);
-				Date date = simpleDateFormat.parse(dateString, pp);
-				if (dateString.length() != pp.getIndex() || date == null) {
-					// Error parsing (add to rejected and remove from accepted)
-					rejectFormats.add(format);
-					acceptFormats.remove(format);
-				}
-				else {
-					if (!rejectFormats.contains(format)) {
-						// Add to accepted only if not already rejected
-						acceptFormats.add(format);
-					}
-				}
-			}
-		}
-		return acceptFormats;
-	}
-
-	private static Set<DecimalFormat> determineValueFormat(Iterable<String> valuesString) {
-
-		List<DecimalFormat> NUMBER_FORMATS = new ArrayList<DecimalFormat>();
-		{
-			DecimalFormatSymbols symb = new DecimalFormatSymbols(Locale.US);
-			symb.setDecimalSeparator('.');
-			NUMBER_FORMATS.add(new DecimalFormat("#.#", symb));
-		}
-		{
-			DecimalFormatSymbols symb = new DecimalFormatSymbols(Locale.US);
-			symb.setDecimalSeparator(',');
-			NUMBER_FORMATS.add(new DecimalFormat("#.#", symb));
-		}
-
-		Set<DecimalFormat> acceptFormats = new HashSet<DecimalFormat>();
-		Set<DecimalFormat> rejectFormats = new HashSet<DecimalFormat>();
-		ParsePosition pp = new ParsePosition(0);
-		for (String valueString : valuesString) {
-			if (valueString.length() > 0) {
-				for (DecimalFormat format : NUMBER_FORMATS) {
-					pp.setErrorIndex(-1); pp.setIndex(0);
-					Number value = format.parse(valueString, pp);
-					if (valueString.length() != pp.getIndex() || value == null) {
-						// Error parsing (add to rejected and remove from accepted)
-						rejectFormats.add(format);
-						acceptFormats.remove(format);
-					}
-					else {
-						if (!rejectFormats.contains(format)) {
-							// Add to accepted only if not already rejected
-							acceptFormats.add(format);
-						}
-					}
-				}
-			}
-		}
-		return acceptFormats;
-	}
 }
