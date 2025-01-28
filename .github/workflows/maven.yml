@@ -28,7 +28,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Creating setting.xml for Maven
-      uses: s4u/maven-settings-action@v2.8.0
+      uses: whelk-io/maven-settings-xml-action@v21
       with:
         servers: |
           [{
@@ -39,6 +39,18 @@ jobs:
               "id": "tibudget-repository-snapshot",
               "username": "${{ secrets.AWS_GITHUB_KEY_ID }}",
               "password": "${{ secrets.AWS_GITHUB_KEY_VALUE }}"
+          }]
+        repositories: |
+          [{
+            "id" : "tibudget-repository-release",
+            "url" : "s3://tibudget-maven-repository/release",
+            "releases": { "enabled": "true" }, 
+            "snapshots": { "enabled": "false" }
+          },{
+            "id" : "tibudget-repository-snapshot",
+            "url" : "s3://tibudget-maven-repository/snapshot",
+            "releases": { "enabled": "false" }, 
+            "snapshots": { "enabled": "true" }
           }]
     - name: Building with Maven
       run: mvn -B package --file pom.xml
