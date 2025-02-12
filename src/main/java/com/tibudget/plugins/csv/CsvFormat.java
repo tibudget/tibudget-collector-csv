@@ -16,7 +16,7 @@ public class CsvFormat {
 
     int valueIndex = -1;
 
-    char colSeparator = ',';
+    CsvCollector.ColumnSeparator colSeparator = CsvCollector.ColumnSeparator.COMMA;
 
     boolean skipFirstRow = true;
 
@@ -24,14 +24,14 @@ public class CsvFormat {
 
     DecimalFormat valueFormat;
 
-    public CsvFormat(char colSeparator, boolean skipFirstRow, String dateFormat) {
+    public CsvFormat(CsvCollector.ColumnSeparator colSeparator, boolean skipFirstRow, String dateFormat) {
         super();
         this.colSeparator = colSeparator;
         this.skipFirstRow = skipFirstRow;
         this.dateFormat = dateFormat;
     }
 
-    public CsvFormat(int dateOperationIndex, int dateValueIndex, int labelIndex, int creditIndex, int debitIndex, int valueIndex, char colSeparator,
+    public CsvFormat(int dateOperationIndex, int dateValueIndex, int labelIndex, int creditIndex, int debitIndex, int valueIndex, CsvCollector.ColumnSeparator colSeparator,
                      boolean skipFirstRow, String dateFormat, DecimalFormat valueFormat) {
         super();
         this.dateOperationIndex = dateOperationIndex;
@@ -94,11 +94,11 @@ public class CsvFormat {
         this.valueIndex = valueIndex;
     }
 
-    public char getColSeparator() {
+    public CsvCollector.ColumnSeparator getColSeparator() {
         return colSeparator;
     }
 
-    public void setColSeparator(char colSeparator) {
+    public void setColSeparator(CsvCollector.ColumnSeparator colSeparator) {
         this.colSeparator = colSeparator;
     }
 

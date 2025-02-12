@@ -1,67 +1,134 @@
 package com.tibudget.plugins.csv;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
-import java.text.ParseException;
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
-import java.util.logging.Logger;
-
-import au.com.bytecode.opencsv.CSVReader;
-
-import com.tibudget.api.ICollectorPlugin;
+import com.tibudget.api.CollectorPlugin;
 import com.tibudget.api.Input;
+import com.tibudget.api.OTPProvider;
 import com.tibudget.api.exceptions.CollectError;
 import com.tibudget.api.exceptions.MessagesException;
 import com.tibudget.api.exceptions.ParameterError;
 import com.tibudget.dto.AccountDto;
+import com.tibudget.dto.MessageDto;
 import com.tibudget.dto.OperationDto;
 import com.tibudget.dto.OperationDto.OperationDtoType;
-import com.tibudget.dto.MessageDto;
+
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.text.*;
+import java.util.*;
+import java.util.logging.Logger;
 
 import static java.lang.Math.abs;
 
-public class CsvCollector implements ICollectorPlugin {
+public class CsvCollector implements CollectorPlugin {
 
 	private static final Logger LOG = Logger.getLogger(CsvCollector.class.getName());
 	
 	public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
+	/**
+	 * Enum representing common CSV column separators.
+	 */
+	public enum ColumnSeparator {
+		COMMA(','),         // Comma ","
+		SEMICOLON(';'),     // Semicolon ";"
+		TAB('\t'),          // Tab character "\t"
+		SPACE(' '),         // Space " "
+		PIPE('|');          // Pipe "|"
+
+		private final char character;
+
+		/**
+		 * Constructor for CsvSeparator.
+		 * @param character The character used as a separator.
+		 */
+		ColumnSeparator(char character) {
+			this.character = character;
+		}
+
+		/**
+		 * Gets the separator character.
+		 * @return The separator character.
+		 */
+		public char getCharacter() {
+			return character;
+		}
+
+		/**
+		 * Finds a CsvSeparator from a given character.
+		 * @param separator The character to match.
+		 * @return The corresponding CsvSeparator.
+		 * @throws IllegalArgumentException if the character is not a known separator.
+		 */
+		public static ColumnSeparator fromChar(char separator) {
+			for (ColumnSeparator columnSeparator : values()) {
+				if (columnSeparator.character == separator) {
+					return columnSeparator;
+				}
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * Enum representing common decimal separators in numeric values.
+	 */
+	public enum DecimalSeparator {
+		DOT('.'),        // Dot "."
+		COMMA(',');      // Comma ","
+
+		private final char character;
+
+		/**
+		 * Constructor for DecimalSeparator.
+		 * @param character The character used as a decimal separator.
+		 */
+		DecimalSeparator(char character) {
+			this.character = character;
+		}
+
+		/**
+		 * Gets the decimal separator character.
+		 * @return The decimal separator character.
+		 */
+		public char getCharacter() {
+			return character;
+		}
+
+		/**
+		 * Finds a DecimalSeparator from a given character.
+		 * @param separator The character to match.
+		 * @return The corresponding DecimalSeparator.
+		 * @throws IllegalArgumentException if the character is not a known decimal separator.
+		 */
+		public static DecimalSeparator fromChar(char separator) {
+			for (DecimalSeparator decimalSeparator : values()) {
+				if (decimalSeparator.character == separator) {
+					return decimalSeparator;
+				}
+			}
+			return null;
+		}
+	}
+
 	// messages: <pluginid>_fr.properties + file.label= + file.help=
 
-	@Input(fieldset="fs1", hideFieldset="fsmanual", order=2, required=true)
+	@Input(fieldset="fs1", hideFieldset="fsmanual", order=2, required=false)
 	private boolean auto = true;
 
 	@Input(fieldset="fs1", order=0, required=false)
 	private AccountDto account;
 
-	@Input(fieldset="fs1", order=1, required=true)
+	@Input(fieldset="fs1", order=1)
 	private File file;
 
-	@Input(fieldset="fsmanual", order=5, required=true)
+	@Input(fieldset="fsmanual", order=5)
 	private int dateOperationIndex = -1;
 
 	@Input(fieldset="fsmanual", order=6, required=false)
 	private int dateValueIndex = -1;
 
-	@Input(fieldset="fsmanual", order=7, required=true)
+	@Input(fieldset="fsmanual", order=7)
 	private int labelIndex = -1;
 
 	@Input(fieldset="fsmanual", order=9, required=false)
@@ -70,23 +137,23 @@ public class CsvCollector implements ICollectorPlugin {
 	@Input(fieldset="fsmanual", order=10, required=false)
 	private int debitIndex = -1;
 
-	@Input(fieldset="fsmanual", order=8, required=true)
+	@Input(fieldset="fsmanual", order=8)
 	private int valueIndex = -1;
 
-	@Input(fieldset="fsmanual", order=11, required=true)
+	@Input(fieldset="fsmanual", order=11)
 	private String dateFormat = null;
 
-	@Input(fieldset="fsmanual", order=13, required=true)
-	private char decimalSeparator = '.';
+	@Input(fieldset="fsmanual", order=13)
+	private DecimalSeparator decimalSeparator = DecimalSeparator.DOT;
 
-	@Input(fieldset="fsmanual", order=12, required=true)
+	@Input(fieldset="fsmanual", order=12)
 	private String numberFormat = "#.#";
 
-	@Input(fieldset="fsmanual", order=3, required=true)
+	@Input(fieldset="fsmanual", order=3, required=false)
 	private boolean skipFirstRow = true;
 
-	@Input(fieldset="fsmanual", order=4, required=true)
-	private char colSeparator = ',';
+	@Input(fieldset="fsmanual", order=4)
+	private ColumnSeparator colSeparator = ColumnSeparator.COMMA;
 
 	private List<OperationDto> operationsDtos;
 
@@ -103,8 +170,8 @@ public class CsvCollector implements ICollectorPlugin {
 
 	public CsvCollector(File file, boolean auto, int dateOperationIndex,
 			int dateValueIndex, int labelIndex, int creditIndex,
-			int debitIndex, int valueIndex, char colSeparator,
-			boolean skipFirstRow, String dateFormat, String numberFormat, char decimalSeparator) {
+			int debitIndex, int valueIndex, ColumnSeparator colSeparator,
+			boolean skipFirstRow, String dateFormat, String numberFormat, DecimalSeparator decimalSeparator) {
 		this(file);
 		this.auto = auto;
 		this.dateOperationIndex = dateOperationIndex;
@@ -135,17 +202,14 @@ public class CsvCollector implements ICollectorPlugin {
 			initAuto();
 		}
 
-		this.operationsDtos = new ArrayList<OperationDto>();
+		this.operationsDtos = new ArrayList<>();
 		int lineCount = CsvCollector.getLineCount(this.file);
 		int count = 0;
-		Reader reader = null;
-		CSVReader csvReader = null;
-		FileInputStream is = null;
+		CsvFileReader csvReader = null;
 		try {
 			SimpleDateFormat fmt = new SimpleDateFormat(getDateFormat());
-			is = new FileInputStream(this.file);
-			reader = new InputStreamReader(is, DEFAULT_CHARSET);
-			csvReader = new CSVReader(reader, getColSeparator());
+			csvReader = new CsvFileReader(this.file.getAbsolutePath(), getColSeparator().getCharacter());
+
 			String [] nextLine;
 			if (isSkipFirstRow()) {
 				csvReader.readNext();
@@ -163,7 +227,7 @@ public class CsvCollector implements ICollectorPlugin {
 				}
 				try {
 					// Date value
-					Date dateValue = null;
+					Date dateValue;
 					try {
 						String dateStr = nextLine[getDateValueIndex() - 1].trim();
 						dateValue = fmt.parse(dateStr);
@@ -182,7 +246,7 @@ public class CsvCollector implements ICollectorPlugin {
 						}
 					}
 					// Date operation
-					Date dateOperation = null;
+					Date dateOperation;
 					try {
 						dateOperation = fmt.parse(nextLine[getDateOperationIndex() - 1]);
 					} catch (ParseException e) {
@@ -195,7 +259,7 @@ public class CsvCollector implements ICollectorPlugin {
 					// Label
 					String label = nextLine[getLabelIndex() - 1].trim();
 					// Value
-					Double value = null;
+					Double value;
 					if (getValueIndex() > 0) {
 						String valueStr = nextLine[getValueIndex() - 1].trim();
 						value = parseNumber(valueStr);
@@ -222,7 +286,7 @@ public class CsvCollector implements ICollectorPlugin {
 					OperationDto op = new OperationDto(
 							this.account.getUuid(),
 							"",
-							OperationDtoType.OTHER,
+							OperationDtoType.PAYMENT,
 							dateOperation,
 							dateValue,
 							label,
@@ -259,25 +323,10 @@ public class CsvCollector implements ICollectorPlugin {
 			else {
 				throw new CollectError("collect.error.generic", e);
 			}
-		}
-		finally {
+		} finally {
 			if (csvReader != null) {
 				try {
 					csvReader.close();
-				} catch (IOException e) {
-					LOG.fine("Ignoring IOException: " + e.getMessage());
-				}
-			}
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					LOG.fine("Ignoring IOException: " + e.getMessage());
-				}
-			}
-			if (is != null) {
-				try {
-					is.close();
 				} catch (IOException e) {
 					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
@@ -290,7 +339,7 @@ public class CsvCollector implements ICollectorPlugin {
 		Double value;
 		if (getNumberFormat() != null) {
 			DecimalFormatSymbols symb = new DecimalFormatSymbols(Locale.US);
-			symb.setDecimalSeparator(getDecimalSeparator());
+			symb.setDecimalSeparator(getDecimalSeparator().getCharacter());
 			NumberFormat numberFormat = new DecimalFormat(getNumberFormat(), symb);
 			ParsePosition pp = new ParsePosition(0);
 			value = numberFormat.parse(numberStr, pp).doubleValue();
@@ -324,7 +373,7 @@ public class CsvCollector implements ICollectorPlugin {
 			setDebitIndex(format.getDebitIndex());
 			setValueIndex(format.getValueIndex());
 			setDateFormat(format.getDateFormat());
-			setDecimalSeparator(format.getValueFormat().getDecimalFormatSymbols().getDecimalSeparator());
+			setDecimalSeparator(DecimalSeparator.fromChar(format.getValueFormat().getDecimalFormatSymbols().getDecimalSeparator()));
 			setNumberFormat(format.getValueFormat().toPattern());
 		} catch (IOException e) {
 			throw new ParameterError("auto", "collect.error.auto", e);
@@ -332,12 +381,12 @@ public class CsvCollector implements ICollectorPlugin {
 	}
 
 	@Override
-	public Iterable<AccountDto> getAccounts() {
-		return Collections.singleton(this.account);
+	public List<AccountDto> getAccounts() {
+		return Collections.singletonList(this.account);
 	}
 
 	@Override
-	public Iterable<OperationDto> getOperations() {
+	public List<OperationDto> getOperations() {
 		return this.operationsDtos;
 	}
 
@@ -369,7 +418,7 @@ public class CsvCollector implements ICollectorPlugin {
 		this.valueIndex = valueIndex;
 	}
 
-	public void setColSeparator(char colSeparator) {
+	public void setColSeparator(ColumnSeparator colSeparator) {
 		this.colSeparator = colSeparator;
 	}
 
@@ -409,7 +458,7 @@ public class CsvCollector implements ICollectorPlugin {
 		return this.valueIndex;
 	}
 
-	public char getColSeparator() {
+	public ColumnSeparator getColSeparator() {
 		return this.colSeparator;
 	}
 
@@ -437,19 +486,34 @@ public class CsvCollector implements ICollectorPlugin {
 		this.numberFormat = numberFormat;
 	}
 
-	public char getDecimalSeparator() {
+	public DecimalSeparator getDecimalSeparator() {
 		return this.decimalSeparator;
 	}
 
-	public void setDecimalSeparator(char decimalSeparator) {
+	public void setDecimalSeparator(DecimalSeparator decimalSeparator) {
 		this.decimalSeparator = decimalSeparator;
 	}
 
 	@Override
-	public Collection<MessageDto> validate() {
+	public void setOTPProvider(OTPProvider otpProvider) {
+		// Not needed here
+	}
+
+	@Override
+	public void setCookies(Map<String, String> map) {
+		// Not needed here
+	}
+
+	@Override
+	public Map<String, String> getCookies() {
+		return Map.of();
+	}
+
+	@Override
+	public List<MessageDto> validate() {
 		List<MessageDto> msg = new ArrayList<>();
 		if (this.account == null) {
-			this.account = new AccountDto(UUID.randomUUID().toString(), com.tibudget.dto.AccountDto.AccountDtoType.OTHER, "CSV account", "Import CSV", 0.0);
+			this.account = new AccountDto(UUID.randomUUID().toString(), AccountDto.AccountDtoType.PAYMENT, "CSV account", "Import CSV", Currency.getInstance(Locale.getDefault()).getCurrencyCode(), 0.0);
 		}
 		if (this.file == null) {
 			// Do not check file existance since platform is storing files in
@@ -457,7 +521,7 @@ public class CsvCollector implements ICollectorPlugin {
 			msg.add(new MessageDto("file", "form.error.file.null"));
 		}
 		if (!this.auto) {
-			if (this.colSeparator == Character.MIN_VALUE) {
+			if (this.colSeparator == null) {
 				msg.add(new MessageDto("colSeparator", "form.error.colSeparator.null"));
 			}
 			if (this.labelIndex < 0) {
@@ -481,7 +545,7 @@ public class CsvCollector implements ICollectorPlugin {
 			if (this.debitIndex > 0 && (this.debitIndex == this.dateOperationIndex || this.debitIndex == this.dateValueIndex)) {
 				msg.add(new MessageDto("debitIndex", "form.error.debitIndex.alreadyused"));
 			}
-			if (this.dateFormat == null || this.dateFormat.trim().length() == 0) {
+			if (this.dateFormat == null || this.dateFormat.trim().isEmpty()) {
 				msg.add(new MessageDto("dateFormat", "form.error.dateFormat.null"));
 			}
 			else {
@@ -492,16 +556,16 @@ public class CsvCollector implements ICollectorPlugin {
 					msg.add(new MessageDto("dateFormat", "form.error.dateFormat.invalid", this.dateFormat));
 				}
 			}
-			if (this.decimalSeparator == Character.MIN_VALUE) {
+			if (this.decimalSeparator == null) {
 				msg.add(new MessageDto("decimalSeparator", "form.error.decimalSeparator.null"));
 			}
-			else if (this.numberFormat == null || this.numberFormat.trim().length() == 0) {
+			else if (this.numberFormat == null || this.numberFormat.trim().isEmpty()) {
 				msg.add(new MessageDto("decimalSeparator", "form.error.numberFormat.null"));
 			}
 			else {
 				try {
 					DecimalFormatSymbols symb = new DecimalFormatSymbols(Locale.US);
-					symb.setDecimalSeparator(getDecimalSeparator());
+					symb.setDecimalSeparator(getDecimalSeparator().getCharacter());
 					new DecimalFormat(getNumberFormat(), symb);
 				}
 				catch (IllegalArgumentException e) {
@@ -529,8 +593,6 @@ public class CsvCollector implements ICollectorPlugin {
 			while (buffer.readLine() != null) {
 				count++;
 			}
-		} catch (FileNotFoundException e) {
-			count = -1;
 		} catch (IOException e) {
 			count = -1;
 		}
@@ -558,9 +620,5 @@ public class CsvCollector implements ICollectorPlugin {
 			}
 		}
 		return count;
-	}
-
-	public void etBankAccount(AccountDto bankAccount) {
-		this.account = bankAccount;
 	}
 }

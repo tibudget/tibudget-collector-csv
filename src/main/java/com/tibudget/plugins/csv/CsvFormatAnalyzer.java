@@ -1,6 +1,5 @@
 package com.tibudget.plugins.csv;
 
-import au.com.bytecode.opencsv.CSVReader;
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
 
 import java.io.*;
@@ -11,7 +10,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class CsvFormatAnalyzer {
 
@@ -95,20 +93,20 @@ public class CsvFormatAnalyzer {
 	public static CsvFormat findFormat(File csvFile) throws IOException {
 
 		// Guess char separator
-		Character charSepartor = findCharSeparator(csvFile);
+		CsvCollector.ColumnSeparator charSepartor = findCharSeparator(csvFile);
 		if (charSepartor == null) {
 			return null;
 		}
 
 		// Guess date format
-		String datePattern = findDatePattern(csvFile, charSepartor.charValue());
+		String datePattern = findDatePattern(csvFile, charSepartor.getCharacter());
 		if (datePattern == null) {
 			return null;
 		}
 		SimpleDateFormat dateFormat = new SimpleDateFormat(datePattern);
 
 		// Guess values format
-		DecimalFormat decimalFormat = findDecimalFormat(csvFile, charSepartor.charValue());
+		DecimalFormat decimalFormat = findDecimalFormat(csvFile, charSepartor.getCharacter());
 		if (decimalFormat == null) {
 			return null;
 		}
@@ -117,13 +115,9 @@ public class CsvFormatAnalyzer {
 		Map<Integer, ColumnStats> colStats = new HashMap<Integer, ColumnStats>();
 		boolean skipFirstLine = true;
 		int lineCount = 0;
-		Reader reader = null;
-		CSVReader csvReader = null;
-		FileInputStream is = null;
+		CsvFileReader csvReader = null;
 		try {
-			is = new FileInputStream(csvFile);
-			reader = new InputStreamReader(is, CsvCollector.DEFAULT_CHARSET);
-			csvReader = new CSVReader(reader, charSepartor.charValue());
+			csvReader = new CsvFileReader(csvFile.getAbsolutePath(), charSepartor.getCharacter());
 			// Analyze first line
 			String[] nextLine = csvReader.readNext();
 			for (String element : nextLine) {
@@ -181,25 +175,10 @@ public class CsvFormatAnalyzer {
 					colIndex++;
 				}
 			}
-		}
-		finally {
+		} finally {
 			if (csvReader != null) {
 				try {
 					csvReader.close();
-				} catch (IOException e) {
-					LOG.fine("Ignoring IOException: " + e.getMessage());
-				}
-			}
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					LOG.fine("Ignoring IOException: " + e.getMessage());
-				}
-			}
-			if (is != null) {
-				try {
-					is.close();
 				} catch (IOException e) {
 					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
@@ -383,16 +362,12 @@ public class CsvFormatAnalyzer {
 	}
 
 	private static String findDatePattern(File file, char sep) throws IOException {
-		Reader reader = null;
-		CSVReader csvReader = null;
-		FileInputStream is = null;
+		CsvFileReader csvReader = null;
 		String selectedFormat = null;
 		Set<String> datesString = new HashSet<String>();
 		int firstDateCol = -1, secondDateCol = -1;
 		try {
-			is = new FileInputStream(file);
-			reader = new InputStreamReader(is, CsvCollector.DEFAULT_CHARSET);
-			csvReader = new CSVReader(reader, sep);
+			csvReader = new CsvFileReader(file.getAbsolutePath(), sep);
 			// Skip next line
 			csvReader.readNext();
 			String[] nextLine = csvReader.readNext();
@@ -428,25 +403,10 @@ public class CsvFormatAnalyzer {
 			if (formats.size() > 0) {
 				selectedFormat = formats.iterator().next();
 			}
-		}
-		finally {
+		} finally {
 			if (csvReader != null) {
 				try {
 					csvReader.close();
-				} catch (IOException e) {
-					LOG.fine("Ignoring IOException: " + e.getMessage());
-				}
-			}
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					LOG.fine("Ignoring IOException: " + e.getMessage());
-				}
-			}
-			if (is != null) {
-				try {
-					is.close();
 				} catch (IOException e) {
 					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
@@ -456,16 +416,12 @@ public class CsvFormatAnalyzer {
 	}
 
 	private static DecimalFormat findDecimalFormat(File file, char sep) throws IOException {
-		Reader reader = null;
-		CSVReader csvReader = null;
-		FileInputStream is = null;
+		CsvFileReader csvReader = null;
 		DecimalFormat selectedFormat = null;
 		Set<String> valuesString = new HashSet<String>();
 		int firstValueCol = -1, secondValueCol = -1;
 		try {
-			is = new FileInputStream(file);
-			reader = new InputStreamReader(is, CsvCollector.DEFAULT_CHARSET);
-			csvReader = new CSVReader(reader, sep);
+			csvReader = new CsvFileReader(file.getAbsolutePath(), sep);
 			// Skip next line
 			csvReader.readNext();
 			String[] nextLine = csvReader.readNext();
@@ -501,25 +457,10 @@ public class CsvFormatAnalyzer {
 			if (!formats.isEmpty()) {
 				selectedFormat = formats.iterator().next();
 			}
-		}
-		finally {
+		} finally {
 			if (csvReader != null) {
 				try {
 					csvReader.close();
-				} catch (IOException e) {
-					LOG.fine("Ignoring IOException: " + e.getMessage());
-				}
-			}
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					LOG.fine("Ignoring IOException: " + e.getMessage());
-				}
-			}
-			if (is != null) {
-				try {
-					is.close();
 				} catch (IOException e) {
 					LOG.fine("Ignoring IOException: " + e.getMessage());
 				}
@@ -528,7 +469,7 @@ public class CsvFormatAnalyzer {
 		return selectedFormat;
 	}
 
-	private static Character findCharSeparator(File csvFile) throws IOException {
+	private static CsvCollector.ColumnSeparator findCharSeparator(File csvFile) throws IOException {
 		Map<Character, DescriptiveStatistics> stats = new HashMap<Character, DescriptiveStatistics>();
 		final int mincol = 3;
 		final int maxcol = 8;
@@ -601,7 +542,7 @@ public class CsvFormatAnalyzer {
 				currentDeviation = stat.getStandardDeviation();
 			}
 		}
-		return currentChar;
+		return CsvCollector.ColumnSeparator.fromChar(currentChar);
 	}
 
 }

@@ -22,7 +22,7 @@ public class CsvFormatAnalyzerTest {
 			File csv = new File("src/test/resources/import-comma-dv-do-l-c-d.csv");
 			CsvFormat guessedFormat = CsvFormatAnalyzer.findFormat(csv);
 			assertNotNull(guessedFormat, "Cannot guess format");
-			assertEquals(',', guessedFormat.getColSeparator(), "char separator");
+			assertEquals(CsvCollector.ColumnSeparator.COMMA, guessedFormat.getColSeparator(), "char separator");
 			assertEquals(true, guessedFormat.isSkipFirstRow(), "skip first row");
 			assertEquals(1, guessedFormat.getDateOperationIndex(), "date op index");
 			assertEquals(2, guessedFormat.getDateValueIndex(), "date value index");
@@ -42,7 +42,7 @@ public class CsvFormatAnalyzerTest {
 			File csv = new File("src/test/resources/import-semi-colon-do-dv-m-l.csv");
 			CsvFormat guessedFormat = CsvFormatAnalyzer.findFormat(csv);
 			assertNotNull(guessedFormat, "Cannot guess format");
-			assertEquals(';', guessedFormat.getColSeparator(), "char separator");
+			assertEquals(CsvCollector.ColumnSeparator.SEMICOLON, guessedFormat.getColSeparator(), "char separator");
 			assertEquals(true, guessedFormat.isSkipFirstRow(), "skip first row");
 			assertEquals(2, guessedFormat.getDateOperationIndex(), "date op index");
 			assertEquals(1, guessedFormat.getDateValueIndex(), "date value index");
@@ -62,7 +62,7 @@ public class CsvFormatAnalyzerTest {
 			File csv = new File("src/test/resources/import-tab-dv-l-c-d.csv");
 			CsvFormat guessedFormat = CsvFormatAnalyzer.findFormat(csv);
 			assertNotNull(guessedFormat, "Cannot guess format");
-			assertEquals('\t', guessedFormat.getColSeparator(), "char separator");
+			assertEquals(CsvCollector.ColumnSeparator.TAB, guessedFormat.getColSeparator(), "char separator");
 			assertEquals(true, guessedFormat.isSkipFirstRow(), "skip first row");
 			assertEquals(1, guessedFormat.getDateOperationIndex(), "date op index");
 			assertEquals(1, guessedFormat.getDateValueIndex(), "date value index");
@@ -82,7 +82,7 @@ public class CsvFormatAnalyzerTest {
 			File csv = new File("src/test/resources/import-nrow.csv");
 			CsvFormat guessedFormat = CsvFormatAnalyzer.findFormat(csv);
 			assertNotNull(guessedFormat, "Cannot guess format");
-			assertEquals('\t', guessedFormat.getColSeparator(), "char separator");
+			assertEquals(CsvCollector.ColumnSeparator.TAB, guessedFormat.getColSeparator(), "char separator");
 			assertEquals(true, guessedFormat.isSkipFirstRow(), "skip first row");
 			assertEquals(2, guessedFormat.getDateOperationIndex(), "date op index");
 			assertEquals(1, guessedFormat.getDateValueIndex(), "date value index");

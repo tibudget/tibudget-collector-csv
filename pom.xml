@@ -4,18 +4,16 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.tibudget</groupId>
 	<artifactId>tibudget-collector-csv</artifactId>
-	<version>0.0.8-SNAPSHOT</version>
+	<version>0.0.9-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>Ti'Budget CSV file collector</name>
+	<name>CSV file collector</name>
 	<description />
-	<url>http://www.tibudget.com</url>
-	<organization><name>Ti'Budget</name></organization>
+	<url>https://www.tibudget.com</url>
+	<organization><name>ti'bu</name></organization>
 
 	<scm>
-		<connection>scm:git:${project.scm.url}</connection>
-		<developerConnection>scm:git:${project.scm.url}</developerConnection>
-		<url>git@github.com:tibudget/tibudget-collector-csv.git</url>
+		<connection>scm:git:https://github.com/tibudget/tibudget-collector-csv.git</connection>
 		<tag>HEAD</tag>
 	</scm>
 
@@ -36,19 +34,12 @@
 	<properties>
 		<!-- To make the build platform independant -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.release>8</maven.compiler.release>
+		<maven.compiler.release>11</maven.compiler.release>
 
-		<tibudget.api.version>0.0.11-SNAPSHOT</tibudget.api.version>
+		<tibudget.api.version>0.8</tibudget.api.version>
 	</properties>
 
 	<dependencies>
-
-		<!-- For CSV parsing -->
-		<dependency>
-			<groupId>net.sf.opencsv</groupId>
-			<artifactId>opencsv</artifactId>
-			<version>2.3</version>
-		</dependency>
 
 		<!-- For CSV format analyzer -->
 		<dependency>
@@ -90,7 +81,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.13.0</version>
 				<configuration>
-					<release>8</release>
+					<release>11</release>
 					<encoding>${project.build.sourceEncoding}</encoding>
 				</configuration>
 			</plugin>

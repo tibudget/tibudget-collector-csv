@@ -35,7 +35,7 @@ public class ImportFromFileTest {
 		assertTimeout(Duration.ofSeconds(TIMEOUT_LONG), () -> {
 			assertThrows(ParameterError.class, () -> {
 				File csv = new File("target/test-classes/import-comma-dv-do-l-c-d.csv");
-				CsvCollector collector = new CsvCollector(csv, false, 1, 2, 3, 4, 5, -1, ',', true, "MM-yy-dd", "#.#", '.');
+				CsvCollector collector = new CsvCollector(csv, false, 1, 2, 3, 4, 5, -1, CsvCollector.ColumnSeparator.COMMA, true, "MM-yy-dd", "#.#", CsvCollector.DecimalSeparator.DOT);
 				collector.collect(null);
 			});
 		});
@@ -46,7 +46,7 @@ public class ImportFromFileTest {
 		File csv = new File("target/test-classes/import-comma-dv-do-l-c-d.csv");
 		DecimalFormatSymbols symb = new DecimalFormatSymbols(Locale.FRANCE);
 		symb.setDecimalSeparator('.');
-		CsvCollector collector = new CsvCollector(csv, false, 1, 2, 3, 4, 5, -1, ',', true, "yyyy-MM-dd", "#.#", '.');
+		CsvCollector collector = new CsvCollector(csv, false, 1, 2, 3, 4, 5, -1, CsvCollector.ColumnSeparator.COMMA, true, "yyyy-MM-dd", "#.#", CsvCollector.DecimalSeparator.DOT);
 		collector.validate();
 		collector.collect(null);
 		// Asserts...
@@ -67,7 +67,7 @@ public class ImportFromFileTest {
 			File csv = new File("target/test-classes/import-semi-colon-do-dv-m-l.csv");
 			DecimalFormatSymbols symb = new DecimalFormatSymbols(Locale.FRANCE);
 			symb.setDecimalSeparator('.');
-			CsvCollector collector = new CsvCollector(csv, false, 2, 1, 4, -1, -1, 3, ';', true, "yyyy-MM-dd", "#.#", '.');
+			CsvCollector collector = new CsvCollector(csv, false, 2, 1, 4, -1, -1, 3, CsvCollector.ColumnSeparator.SEMICOLON, true, "yyyy-MM-dd", "#.#", CsvCollector.DecimalSeparator.DOT);
 			collector.validate();
 			collector.collect(null);
 			// Asserts...
@@ -89,7 +89,7 @@ public class ImportFromFileTest {
 			File csv = new File("target/test-classes/import-tab-dv-l-c-d.csv");
 			DecimalFormatSymbols symb = new DecimalFormatSymbols(Locale.FRANCE);
 			symb.setDecimalSeparator('.');
-			CsvCollector collector = new CsvCollector(csv, false, 1, -1, 2, 3, 4, -1, '\t', true, "yyyy-MM-dd", "#.#", '.');
+			CsvCollector collector = new CsvCollector(csv, false, 1, -1, 2, 3, 4, -1, CsvCollector.ColumnSeparator.TAB, true, "yyyy-MM-dd", "#.#", CsvCollector.DecimalSeparator.DOT);
 			collector.validate();
 			collector.collect(null);
 			// Asserts...
@@ -110,7 +110,7 @@ public class ImportFromFileTest {
 		assertTimeout(Duration.ofSeconds(TIMEOUT_LONG), () -> {
 			File csv = new File("target/test-classes/import-nrow.csv");
 			long start = System.currentTimeMillis();
-			CsvCollector collector = new CsvCollector(csv, false, 2, 1, 3, 5, 4, -1, '\t', true, "dd/MM/yyyy", "#.#", ',');
+			CsvCollector collector = new CsvCollector(csv, false, 2, 1, 3, 5, 4, -1, CsvCollector.ColumnSeparator.TAB, true, "dd/MM/yyyy", "#.#", CsvCollector.DecimalSeparator.COMMA);
 			collector.validate();
 			collector.collect(null);
 			long duration = System.currentTimeMillis() - start;
