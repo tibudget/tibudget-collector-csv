@@ -285,7 +285,6 @@ public class CsvCollector implements CollectorPlugin {
 					// Create operation
 					OperationDto op = new OperationDto(
 							this.account.getUuid(),
-							"",
 							OperationDtoType.PAYMENT,
 							dateOperation,
 							dateValue,
@@ -296,7 +295,7 @@ public class CsvCollector implements CollectorPlugin {
 					this.operationsDtos.add(op);
 
 					// Balance will always be correct
-					this.account.setCurrentBalance(this.account.getCurrentBalance() + op.getValue());
+					this.account.setCurrentBalance(this.account.getCurrentBalance() + op.getAmount());
 
 				} catch (MessagesException e) {
 					long lineNumber = count + 1;
@@ -513,7 +512,7 @@ public class CsvCollector implements CollectorPlugin {
 	public List<MessageDto> validate() {
 		List<MessageDto> msg = new ArrayList<>();
 		if (this.account == null) {
-			this.account = new AccountDto(UUID.randomUUID().toString(), AccountDto.AccountDtoType.PAYMENT, "CSV account", "Import CSV", Currency.getInstance(Locale.getDefault()).getCurrencyCode(), 0.0);
+			this.account = new AccountDto(AccountDto.AccountDtoType.PAYMENT, "CSV account", "Import CSV", Currency.getInstance(Locale.getDefault()).getCurrencyCode(), 0.0);
 		}
 		if (this.file == null) {
 			// Do not check file existance since platform is storing files in

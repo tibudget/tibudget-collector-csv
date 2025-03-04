@@ -147,7 +147,7 @@ public class ImportFromFileTest {
 		entities.sort(new BankOperationComparator());
 		
 		for (OperationDto dto : entities) {
-			LOG.fine(dto.getLabel() + ", " + dto.getValue() + ", " + dto.getDateValue() + ", " + dto.getDateOperation());
+			LOG.fine(dto.getLabel() + ", " + dto.getAmount() + ", " + dto.getDateValue() + ", " + dto.getDateOperation());
 		}
 
 		int i = 0;
@@ -166,7 +166,7 @@ public class ImportFromFileTest {
 
 	private void checkBankOperation(OperationDto dto, int opy, int opm, int opd, int vy, int vm, int vd, String label, Double value, boolean dateOpEqualDateValue) {
 		assertEquals(label, dto.getLabel(), "label");
-		assertEquals(value, dto.getValue(), "value of "+label);
+		assertEquals(value, dto.getAmount(), "amount of "+label);
 
 		Calendar cal = Calendar.getInstance(Locale.FRANCE);
 		cal.setTime(dto.getDateOperation());
