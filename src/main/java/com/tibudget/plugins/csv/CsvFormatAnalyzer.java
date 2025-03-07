@@ -255,7 +255,7 @@ public class CsvFormatAnalyzer {
 			format.setCreditIndex(-1);
 			format.setDebitIndex(-1);
 			// If this is the new amount of the account that means credit and debit column are present; let's check
-			if ((n2 + n3) == n1) {
+			if ((n2 != 0 && n3 != 0) && thirdNumberColIndex > 0 && (n2 + n3) == n1) {
 				format.setValueIndex(-1);
 				// Heuristics: more values in debit column :-)
 				if (n2 < n3) {

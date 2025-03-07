@@ -125,7 +125,7 @@ public class ImportFromFileTest {
 	}
 
 	@Test
-	public void testImportCic() throws CollectError, ParameterError {
+	public void testImportCic1() throws CollectError, ParameterError {
 		File csv = new File("target/test-classes/import-cic.csv");
 		CsvCollector collector = new CsvCollector(csv);
 		collector.validate();
@@ -136,6 +136,17 @@ public class ImportFromFileTest {
 		checkBankOperation(ops.get(4), 2024, 11, 27, 2024, 11, 27, "VIR MME OU MR SMITH VIREMENT DE COMPTE MME", 40.0, true);
 		checkBankOperation(ops.get(22), 2024, 11, 29, 2024, 11, 29, "FRAIS PAIE CB OP 49,99 USD", -1.72, true);
 		checkBankOperation(ops.get(16), 2024, 11, 28, 2024, 11, 16, "VIR SUPTRESO 00020187402 REF 123456789123456789", 1226.92, false);
+	}
+
+	@Test
+	public void testImportCic2() throws CollectError, ParameterError {
+		File csv = new File("target/test-classes/import-cic-2.csv");
+		CsvCollector collector = new CsvCollector(csv);
+		collector.validate();
+		collector.collect(null);
+		List<OperationDto> ops = (List<OperationDto>) collector.getOperations();
+		assertEquals(289, ops.size());
+		checkBankOperation(ops.get(12), 2025, 1, 8, 2025, 1, 1, "F COTIS CP GLOBAL", -18.96, false);
 	}
 
 	private void checkResult(List<OperationDto> entities) {
