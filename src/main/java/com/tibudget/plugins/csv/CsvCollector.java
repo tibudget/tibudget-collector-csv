@@ -155,16 +155,20 @@ public class CsvCollector implements CollectorPlugin {
 	@Input(fieldset="fsmanual", order=4)
 	private ColumnSeparator colSeparator = ColumnSeparator.COMMA;
 
-	private List<OperationDto> operationsDtos;
+	private final List<OperationDto> operations;
+
+	private final List<AccountDto> accounts;
 
 	private int progress = 0;
 
 	public CsvCollector() {
 		super();
+		operations = new ArrayList<>();
+		accounts = new ArrayList<>();
 	}
 
 	public CsvCollector(File file) {
-		super();
+		this();
 		this.file = file;
 	}
 
@@ -202,7 +206,6 @@ public class CsvCollector implements CollectorPlugin {
 			initAuto();
 		}
 
-		this.operationsDtos = new ArrayList<>();
 		int lineCount = CsvCollector.getLineCount(this.file);
 		int count = 0;
 		CsvFileReader csvReader = null;
@@ -292,7 +295,7 @@ public class CsvCollector implements CollectorPlugin {
 							"",
 							value
 					);
-					this.operationsDtos.add(op);
+					this.operations.add(op);
 
 					// Balance will always be correct
 					this.account.setCurrentBalance(this.account.getCurrentBalance() + op.getAmount());
@@ -381,12 +384,17 @@ public class CsvCollector implements CollectorPlugin {
 
 	@Override
 	public List<AccountDto> getAccounts() {
-		return Collections.singletonList(this.account);
+		return this.accounts;
+	}
+
+	@Override
+	public void setAccounts(List<AccountDto> list) {
+		this.accounts.addAll(list);
 	}
 
 	@Override
 	public List<OperationDto> getOperations() {
-		return this.operationsDtos;
+		return this.operations;
 	}
 
 	public void setFile(File file) {
