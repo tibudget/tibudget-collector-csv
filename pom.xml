@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.tibudget</groupId>
 	<artifactId>tibudget-collector-csv</artifactId>
-	<version>0.0.13-SNAPSHOT</version>
+	<version>0.0.13</version>
 	<packaging>jar</packaging>
 
 	<name>CSV file collector</name>
@@ -14,7 +14,7 @@
 
 	<scm>
 		<connection>scm:git:https://github.com/tibudget/tibudget-collector-csv.git</connection>
-		<tag>HEAD</tag>
+		<tag>tibudget-collector-csv-0.0.13</tag>
 	</scm>
 
 	<distributionManagement>
